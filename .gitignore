@@ -1,0 +1,18 @@
+# รายงานและ Log อาจมีข้อมูลเครื่องจริง (Serial, MAC, ชื่อผู้ใช้) จึงไม่ commit
+reports/*
+!reports/.gitkeep
+logs/*
+!logs/.gitkeep
+
+# ผลการทดสอบ
+tests/results/
+testResults.xml
+coverage.xml
+
+# ไฟล์ของ Editor / OS
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+Thumbs.db
+desktop.ini
+.DS_Store

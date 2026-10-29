@@ -1,0 +1,35 @@
+{
+  "healthCheck": {
+    "diskFreeWarnPercent": 15,
+    "diskFreeCriticalPercent": 5,
+    "memoryUsedWarnPercent": 90,
+    "memoryUsedCriticalPercent": 97,
+    "uptimeWarnDays": 7,
+    "uptimeCriticalDays": 30,
+    "defenderSignatureMaxAgeDays": 3,
+    "eventLogHours": 24,
+    "eventLogMaxEvents": 20,
+    "services": [
+      { "name": "Spooler",  "displayName": "Print Spooler",  "mustBeRunning": true },
+      { "name": "Dnscache", "displayName": "DNS Client",     "mustBeRunning": true },
+      { "name": "Dhcp",     "displayName": "DHCP Client",    "mustBeRunning": true },
+      { "name": "EventLog", "displayName": "Windows Event Log", "mustBeRunning": true },
+      { "name": "wuauserv", "displayName": "Windows Update", "mustBeRunning": false },
+      { "name": "BITS",     "displayName": "Background Intelligent Transfer Service", "mustBeRunning": false }
+    ]
+  },
+  "network": {
+    "internetTestIp": "8.8.8.8",
+    "dnsTestName": "www.google.com",
+    "webTestHost": "www.google.com",
+    "webTestPort": 443,
+    "pingCount": 2
+  },
+  "cleanup": {
+    "minFileAgeHours": 24
+  },
+  "newPcSetup": {
+    "showFileExtensions": true,
+    "powerPlan": "Balanced"
+  }
+}
