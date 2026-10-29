@@ -181,6 +181,7 @@ while ($true) {
     }
     catch {
         Write-StatusLine -Status Fail -Message "เกิดข้อผิดพลาด: $($_.Exception.Message)"
+        Write-Host ('         ที่ {0} บรรทัด {1}' -f $_.InvocationInfo.ScriptName, $_.InvocationInfo.ScriptLineNumber) -ForegroundColor DarkGray
         Write-ToolkitLog -Level ERROR -Message "Menu '$choice' ล้มเหลว: $($_.Exception.Message) at $($_.InvocationInfo.PositionMessage)"
     }
 

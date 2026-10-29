@@ -32,37 +32,83 @@ function ConvertFrom-InstallDate {
     return ''
 }
 
+function Get-RegistryValueSafe {
+    <#
+    .SYNOPSIS
+        อ่านค่า Registry 1 ค่า ถ้าค่าเสียหรืออ่านไม่ได้จะคืน $null แทนการโยน Error
+    #>
+    param(
+        [Parameter(Mandatory)][object]$Key,
+        [Parameter(Mandatory)][string]$Name
+    )
+
+    try { return $Key.GetValue($Name) }
+    catch { return $null }
+}
+
 function Get-InstalledApplication {
     <#
     .SYNOPSIS
         รายการโปรแกรมที่ติดตั้ง (ทั้ง 64-bit, 32-bit และของผู้ใช้ปัจจุบัน)
+    .NOTES
+        อ่าน Registry ผ่าน .NET ทีละ Key แทน Get-ItemProperty เพราะถ้ามีโปรแกรมใดเขียนค่า Registry
+        ผิดรูปแบบไว้ Get-ItemProperty จะโยน "Specified cast is not valid" จน -ErrorAction ก็กันไม่ได้
     #>
     [CmdletBinding()]
     param()
 
-    $paths = @(
-        'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*',
-        'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*',
-        'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*'
+    $uninstallPath = 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall'
+    $sources = @(
+        @{ Hive = [Microsoft.Win32.RegistryHive]::LocalMachine; View = [Microsoft.Win32.RegistryView]::Registry64 }
+        @{ Hive = [Microsoft.Win32.RegistryHive]::LocalMachine; View = [Microsoft.Win32.RegistryView]::Registry32 }
+        @{ Hive = [Microsoft.Win32.RegistryHive]::CurrentUser; View = [Microsoft.Win32.RegistryView]::Default }
     )
 
-    Get-ItemProperty -Path $paths -ErrorAction SilentlyContinue |
-        Where-Object {
-            # ซ่อน Component ของระบบและ Update ย่อยที่ไม่ได้แสดงใน "Apps & features"
-            $_.PSObject.Properties['DisplayName'] -and $_.DisplayName -and
-            -not ($_.PSObject.Properties['SystemComponent'] -and $_.SystemComponent -eq 1) -and
-            -not $_.PSObject.Properties['ParentKeyName']
-        } |
-        ForEach-Object {
-            $app = $_
-            [pscustomobject]@{
-                Name        = $app.DisplayName.Trim()
-                Version     = [string]$app.DisplayVersion
-                Publisher   = [string]$app.Publisher
-                InstallDate = ConvertFrom-InstallDate -Value ([string]$app.InstallDate)
+    $apps = foreach ($source in $sources) {
+        $baseKey = $null
+        $uninstallKey = $null
+        try {
+            $baseKey = [Microsoft.Win32.RegistryKey]::OpenBaseKey($source.Hive, $source.View)
+            $uninstallKey = $baseKey.OpenSubKey($uninstallPath)
+            if (-not $uninstallKey) { continue }
+
+            foreach ($subKeyName in $uninstallKey.GetSubKeyNames()) {
+                $appKey = $null
+                try {
+                    $appKey = $uninstallKey.OpenSubKey($subKeyName)
+                    if (-not $appKey) { continue }
+
+                    $displayName = [string](Get-RegistryValueSafe -Key $appKey -Name 'DisplayName')
+                    if ([string]::IsNullOrWhiteSpace($displayName)) { continue }
+                    # ซ่อน Component ของระบบและ Update ย่อยที่ไม่ได้แสดงใน "Apps & features"
+                    if ("$(Get-RegistryValueSafe -Key $appKey -Name 'SystemComponent')" -eq '1') { continue }
+                    if ($null -ne (Get-RegistryValueSafe -Key $appKey -Name 'ParentKeyName')) { continue }
+
+                    [pscustomobject]@{
+                        Name        = $displayName.Trim()
+                        Version     = [string](Get-RegistryValueSafe -Key $appKey -Name 'DisplayVersion')
+                        Publisher   = [string](Get-RegistryValueSafe -Key $appKey -Name 'Publisher')
+                        InstallDate = ConvertFrom-InstallDate -Value ([string](Get-RegistryValueSafe -Key $appKey -Name 'InstallDate'))
+                    }
+                }
+                catch {
+                    Write-Verbose "อ่าน Registry ของ $subKeyName ไม่ได้: $($_.Exception.Message)"
+                }
+                finally {
+                    if ($appKey) { $appKey.Close() }
+                }
             }
-        } |
-        Sort-Object -Property Name, Version -Unique
+        }
+        catch {
+            Write-Verbose "อ่าน Registry $($source.Hive) ($($source.View)) ไม่ได้: $($_.Exception.Message)"
+        }
+        finally {
+            if ($uninstallKey) { $uninstallKey.Close() }
+            if ($baseKey) { $baseKey.Close() }
+        }
+    }
+
+    $apps | Sort-Object -Property Name, Version -Unique
 }
 
 function Get-NetworkConfigurationSummary {
@@ -177,14 +223,20 @@ function Get-SystemInfo {
     }
 
     $apps = @()
-    if (-not $SkipApplications) { $apps = @(Get-InstalledApplication) }
+    if (-not $SkipApplications) {
+        try { $apps = @(Get-InstalledApplication) }
+        catch { Write-ToolkitLog -Level WARN -Message "SystemInfo: อ่านรายการโปรแกรมไม่สำเร็จ - $($_.Exception.Message)" }
+    }
+    $network = @()
+    try { $network = @(Get-NetworkConfigurationSummary) }
+    catch { Write-ToolkitLog -Level WARN -Message "SystemInfo: อ่านข้อมูลเครือข่ายไม่สำเร็จ - $($_.Exception.Message)" }
 
     return [pscustomobject]@{
         CollectedAt  = Get-Date
         Summary      = $summary
         Disks        = @($diskInfo)
         GPUs         = @($gpuInfo)
-        Network      = @(Get-NetworkConfigurationSummary)
+        Network      = $network
         Applications = $apps
     }
 }
