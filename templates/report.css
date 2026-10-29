@@ -1,0 +1,113 @@
+/* สไตล์ของรายงาน HTML — ถูกฝังลงในไฟล์รายงานตอนสร้าง ไฟล์รายงานจึงเปิดได้โดยไม่ต้องมีไฟล์นี้ */
+:root {
+    --bg: #f4f6f9;
+    --card: #ffffff;
+    --text: #1f2933;
+    --muted: #616e7c;
+    --accent: #1f6feb;
+    --border: #d9e2ec;
+    --pass-bg: #e3f9e5;
+    --pass-text: #05400a;
+    --warn-bg: #fff3c4;
+    --warn-text: #5c4813;
+    --fail-bg: #ffe3e3;
+    --fail-text: #610404;
+    --skip-bg: #eef2f7;
+    --skip-text: #52606d;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    padding: 24px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Segoe UI", "Leelawadee UI", Tahoma, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+header, main, footer {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+header {
+    background: var(--accent);
+    color: #fff;
+    padding: 20px 24px;
+    border-radius: 10px 10px 0 0;
+}
+
+header h1 { margin: 0 0 4px; font-size: 22px; }
+header .meta { margin: 0; opacity: .9; font-size: 13px; }
+
+main {
+    background: var(--card);
+    padding: 8px 24px 24px;
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+}
+
+section { margin-top: 24px; }
+
+h2 {
+    font-size: 17px;
+    margin: 0 0 10px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--border);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+th, td {
+    text-align: left;
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    word-break: break-word;
+}
+
+th { background: #f0f4f8; font-weight: 600; }
+tr:nth-child(even) td { background: #fafbfc; }
+
+/* ตารางแบบ List (Property : Value) */
+table.list td:first-child { width: 30%; font-weight: 600; color: var(--muted); }
+
+td.status-pass { background: var(--pass-bg) !important; color: var(--pass-text); font-weight: 600; }
+td.status-warn { background: var(--warn-bg) !important; color: var(--warn-text); font-weight: 600; }
+td.status-fail { background: var(--fail-bg) !important; color: var(--fail-text); font-weight: 600; }
+td.status-skip { background: var(--skip-bg) !important; color: var(--skip-text); }
+
+.banner {
+    margin-top: 20px;
+    padding: 14px 18px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.banner.pass { background: var(--pass-bg); color: var(--pass-text); }
+.banner.warn { background: var(--warn-bg); color: var(--warn-text); }
+.banner.fail { background: var(--fail-bg); color: var(--fail-text); }
+
+.empty { color: var(--muted); font-style: italic; }
+
+footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    padding: 14px;
+}
+
+@media print {
+    body { background: #fff; padding: 0; }
+    header { border-radius: 0; }
+    main { border: none; }
+}
